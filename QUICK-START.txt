@@ -1,0 +1,114 @@
+═══════════════════════════════════════════════════════════════
+  ⚡ GUÍA RÁPIDA - DEPLOYMENT A PRODUCCIÓN
+═══════════════════════════════════════════════════════════════
+
+📦 PASO 1: PREPARAR ARCHIVOS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. Copia toda la carpeta "chat" al servidor de producción
+2. Ubicación recomendada:
+   - Windows: C:\inetpub\chat
+   - Linux: /var/www/chat
+
+🔧 PASO 2: INSTALAR DEPENDENCIAS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+cd /ruta/a/chat
+npm install --production
+npm install -g pm2
+
+⚙️  PASO 3: CONFIGURAR VARIABLES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+A. En ecosystem.config.js (línea ~23):
+   env_production: {
+     PORT: 7000,
+     PUBLIC_IP: 'TU-IP-PRODUCCION'  ← CAMBIAR AQUÍ
+   }
+
+B. En tu config PHP (ej: config/autoload/local.php):
+   define('SOCKET_URL', 'http://TU-IP:7000');
+
+C. En server.js (línea ~8) - IMPORTANTE para CORS:
+   origin: ["http://TU-DOMINIO", "https://TU-DOMINIO"],
+   // NO dejar como "*" en producción
+
+🔥 PASO 4: ABRIR FIREWALL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Windows:
+  netsh advfirewall firewall add rule name="Chat" dir=in action=allow protocol=TCP localport=7000
+
+Linux:
+  sudo ufw allow 7000/tcp
+
+🚀 PASO 5: INICIAR CON PM2
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Windows:
+  - Doble clic en deploy.bat
+  - Elegir opción 2 (Producción)
+
+Linux/Mac:
+  chmod +x deploy.sh
+  ./deploy.sh
+  (Elegir opción 2)
+
+Manual:
+  pm2 start ecosystem.config.js --env production
+  pm2 save
+  pm2 startup
+
+✅ PASO 6: VERIFICAR
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. Ver estado:
+   pm2 status
+
+2. Ver logs:
+   pm2 logs chat-server
+
+3. Probar endpoint:
+   http://TU-IP:7000/health
+
+   Debe responder:
+   {"status":"ok","users":0,"rooms":0,"timestamp":"..."}
+
+4. Probar desde la aplicación PHP:
+   http://TU-DOMINIO/seguridad/chat
+
+📊 COMANDOS ÚTILES PM2
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+pm2 status                    # Ver estado
+pm2 logs chat-server          # Ver logs en vivo
+pm2 restart chat-server       # Reiniciar
+pm2 stop chat-server          # Detener
+pm2 monit                     # Monitor en tiempo real
+pm2 save                      # Guardar configuración
+pm2 startup                   # Auto-inicio al arrancar servidor
+
+🔄 ACTUALIZAR EN PRODUCCIÓN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. pm2 stop chat-server
+2. # Copiar archivos nuevos o hacer git pull
+3. npm install --production
+4. pm2 restart chat-server
+
+O sin downtime:
+  pm2 reload chat-server
+
+🆘 SOLUCIÓN PROBLEMAS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+• No inicia:
+  pm2 logs chat-server --err
+
+• Puerto ocupado:
+  netstat -ano | findstr :7000     (Windows)
+  lsof -i :7000                     (Linux)
+
+• No conectan clientes:
+  1. Verificar firewall
+  2. Revisar CORS en server.js
+  3. Probar: curl http://localhost:7000/health
+
+• Ver logs detallados:
+  pm2 show chat-server
+
+═══════════════════════════════════════════════════════════════
+📖 Guía completa: Ver DEPLOY.md
+🔗 README: Ver README.md
+═══════════════════════════════════════════════════════════════
