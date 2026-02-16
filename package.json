@@ -20,7 +20,7 @@
     "pm2:save": "pm2 save"
   },
   "keywords": [],
-  "author": "",
+  "author": "Axel",
   "license": "ISC",
   "description": "",
   "dependencies": {
